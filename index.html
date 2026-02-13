@@ -6,7 +6,90 @@
   <title>Document Parser</title>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <header>
+      <h1>Document Parser &amp; Extractor</h1>
+      <p class="subtitle">Upload a document to parse its content and optionally extract structured fields</p>
+    </header>
+
+    <main>
+      <section id="upload-section">
+        <h2>Upload &amp; Parse</h2>
+
+        <div id="drop-zone">
+          <div class="drop-zone-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <p>Drag &amp; drop a file here or <strong>click to select</strong></p>
+            <p class="hint">PDF, images, Word, PowerPoint, Excel, CSV &mdash; max 5 MB</p>
+          </div>
+          <input
+            type="file"
+            id="file-input"
+            hidden
+            accept=".pdf,.jpeg,.jpg,.png,.apng,.bmp,.dcx,.dds,.dib,.gd,.gif,.icns,.jp2,.pcx,.ppm,.psd,.tga,.tif,.tiff,.webp,.doc,.docx,.odt,.odp,.ppt,.pptx,.csv,.xlsx"
+          />
+        </div>
+
+        <div id="file-info" hidden>
+          <span id="file-name"></span>
+          <span id="file-size"></span>
+          <button id="clear-file" type="button" title="Remove file">&times;</button>
+        </div>
+
+        <details id="schema-section">
+          <summary>Optional: JSON Schema for field extraction</summary>
+          <textarea
+            id="schema-input"
+            rows="6"
+            spellcheck="false"
+            placeholder='{"type": "object", "properties": {"invoice_number": {"type": "string", "description": "Invoice or document number"}, "total_amount": {"type": "number", "description": "Total amount including tax"}}, "required": ["invoice_number", "total_amount"]}'
+          ></textarea>
+        </details>
+
+        <div class="actions">
+          <button id="parse-btn" type="button" disabled>Parse Document</button>
+          <span class="rate-limit-note">Rate limits: 3 req/min, 20 req/day</span>
+        </div>
+
+        <div id="spinner" hidden>
+          <div class="spinner-ring"></div>
+          <span>Parsing document&hellip;</span>
+        </div>
+      </section>
+
+      <section id="results-section" hidden>
+        <h2>Results</h2>
+
+        <div id="error-display" hidden></div>
+
+        <div id="metadata-stats" hidden></div>
+
+        <div id="markdown-output" hidden>
+          <h3>Parsed Content</h3>
+          <div id="markdown-render"></div>
+        </div>
+
+        <div id="extraction-output" hidden>
+          <h3>Extracted Fields</h3>
+          <table id="fields-table">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Value</th>
+                <th>References</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
