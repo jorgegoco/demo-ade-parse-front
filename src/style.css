@@ -201,10 +201,6 @@ section h3 {
   cursor: not-allowed;
 }
 
-.rate-limit-note {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
 
 /* Spinner */
 #spinner {
@@ -405,9 +401,6 @@ section h3 {
     align-items: stretch;
   }
 
-  .rate-limit-note {
-    text-align: center;
-  }
 
   #metadata-stats {
     flex-direction: column;

@@ -30,7 +30,6 @@ export async function parseDocument(file, schema = null) {
     const errorMessages = {
       400: 'Unsupported file type.',
       413: 'File exceeds the 5 MB size limit.',
-      429: 'Rate limit exceeded. Please wait before trying again.',
     }
     const message = errorMessages[response.status] || `Server error (${response.status}).`
 
