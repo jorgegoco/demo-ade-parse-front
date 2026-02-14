@@ -113,6 +113,14 @@ function createBoundingBox(id, grounding) {
   div.style.backgroundColor = colors.bg
   div.style.borderColor = colors.border
 
+  // Always-visible type label in top-left corner
+  const label = document.createElement('span')
+  label.className = 'bbox-label'
+  label.textContent = colors.label
+  label.style.backgroundColor = colors.border
+  div.appendChild(label)
+
+  // Hover tooltip with chunk ID for detailed inspection
   const tooltip = document.createElement('span')
   tooltip.className = 'bbox-tooltip'
   tooltip.textContent = `${colors.label} — ${id.substring(0, 8)}`
