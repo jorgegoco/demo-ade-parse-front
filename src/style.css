@@ -204,12 +204,15 @@ section h3 {
 
 /* Spinner */
 #spinner {
-  display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-top: 1rem;
   color: var(--color-text-secondary);
   font-size: 0.9rem;
+}
+
+#spinner:not([hidden]) {
+  display: flex;
 }
 
 .spinner-ring {
