@@ -40,15 +40,22 @@
           <button id="clear-file" type="button" title="Remove file">&times;</button>
         </div>
 
-        <details id="schema-section">
-          <summary>Optional: JSON Schema for field extraction</summary>
-          <textarea
-            id="schema-input"
-            rows="6"
-            spellcheck="false"
-            placeholder='{"type": "object", "properties": {"invoice_number": {"type": "string", "description": "Invoice or document number"}, "total_amount": {"type": "number", "description": "Total amount including tax"}}, "required": ["invoice_number", "total_amount"]}'
-          ></textarea>
-        </details>
+        <div id="schema-section">
+          <label for="schema-preset">Extraction Schema</label>
+          <select id="schema-preset">
+            <option value="none">No schema (parse only)</option>
+            <option value="utility_bill">Utility Bill</option>
+            <option value="custom">Custom JSON schema...</option>
+          </select>
+          <div id="schema-preview" hidden>
+            <textarea
+              id="schema-input"
+              rows="6"
+              spellcheck="false"
+              placeholder='{"type": "object", "properties": {"field": {"type": "string", "description": "..."}}}'
+            ></textarea>
+          </div>
+        </div>
 
         <div class="actions">
           <button id="parse-btn" type="button" disabled>Parse Document</button>
@@ -67,23 +74,51 @@
 
         <div id="metadata-stats" hidden></div>
 
-        <div id="markdown-output" hidden>
-          <h3>Parsed Content</h3>
-          <div id="markdown-render"></div>
-        </div>
+        <div id="results-body">
+          <div id="viewer-column">
+            <div id="viewer-header">
+              <h3>Document</h3>
+              <div id="viewer-legend"></div>
+            </div>
+            <div id="viewer-container">
+              <p class="viewer-placeholder">No visual preview available</p>
+            </div>
+          </div>
 
-        <div id="extraction-output" hidden>
-          <h3>Extracted Fields</h3>
-          <table id="fields-table">
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Value</th>
-                <th>References</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div id="detail-column">
+            <div id="detail-tabs">
+              <button class="tab-btn active" data-tab="chunks">Chunks</button>
+              <button class="tab-btn" data-tab="markdown">Markdown</button>
+              <button class="tab-btn" data-tab="extraction">Extraction</button>
+            </div>
+
+            <div id="tab-chunks" class="tab-panel">
+              <div id="chunk-filters"></div>
+              <div id="chunk-list">
+                <p class="panel-placeholder">Parse a document to see chunks</p>
+              </div>
+            </div>
+
+            <div id="tab-markdown" class="tab-panel" hidden>
+              <div id="markdown-render"></div>
+            </div>
+
+            <div id="tab-extraction" class="tab-panel" hidden>
+              <div id="extraction-output" hidden>
+                <table id="fields-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Value</th>
+                      <th>References</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p id="no-extraction-msg" class="panel-placeholder">Select a schema preset and parse to see extraction results</p>
+            </div>
+          </div>
         </div>
       </section>
     </main>

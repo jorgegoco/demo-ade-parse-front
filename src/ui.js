@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { highlightBoundingBox } from './viewer.js'
 
 marked.setOptions({ breaks: true, gfm: true })
 
@@ -12,16 +13,15 @@ export function initUI({ onFileSelected }) {
     fileName: document.getElementById('file-name'),
     fileSize: document.getElementById('file-size'),
     clearFile: document.getElementById('clear-file'),
-    schemaInput: document.getElementById('schema-input'),
     parseBtn: document.getElementById('parse-btn'),
     spinner: document.getElementById('spinner'),
     resultsSection: document.getElementById('results-section'),
     errorDisplay: document.getElementById('error-display'),
     metadataStats: document.getElementById('metadata-stats'),
-    markdownOutput: document.getElementById('markdown-output'),
     markdownRender: document.getElementById('markdown-render'),
     extractionOutput: document.getElementById('extraction-output'),
     fieldsTableBody: document.querySelector('#fields-table tbody'),
+    noExtractionMsg: document.getElementById('no-extraction-msg'),
   }
 
   // Drop zone: click to browse
@@ -58,6 +58,9 @@ export function initUI({ onFileSelected }) {
     clearFileInfo()
     onFileSelected(null)
   })
+
+  // Tab switching
+  initTabs()
 }
 
 export function showFileInfo(file) {
@@ -111,13 +114,16 @@ export function renderResults(data) {
 
   if (data.parsing) {
     renderMetadata(data.parsing)
-    // Markdown content rendered as HTML (content from server-side parser, not raw user input)
+    // Render markdown content (from server-side parser, not raw user input)
     el.markdownRender.innerHTML = marked.parse(data.parsing.markdown || '')
-    el.markdownOutput.hidden = false
   }
 
   if (data.extraction) {
-    renderExtraction(data.extraction)
+    renderExtraction(data.extraction, data.parsing?.grounding)
+    el.noExtractionMsg.hidden = true
+  } else {
+    el.noExtractionMsg.hidden = false
+    el.extractionOutput.hidden = true
   }
 }
 
@@ -126,11 +132,25 @@ export function clearResults() {
   el.errorDisplay.innerHTML = ''
   el.metadataStats.hidden = true
   el.metadataStats.innerHTML = ''
-  el.markdownOutput.hidden = true
   el.markdownRender.innerHTML = ''
   el.extractionOutput.hidden = true
   el.fieldsTableBody.innerHTML = ''
   el.resultsSection.hidden = true
+  if (el.noExtractionMsg) el.noExtractionMsg.hidden = false
+}
+
+function initTabs() {
+  const buttons = document.querySelectorAll('.tab-btn')
+  const panels = document.querySelectorAll('.tab-panel')
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.remove('active'))
+      panels.forEach((p) => (p.hidden = true))
+      btn.classList.add('active')
+      document.getElementById(`tab-${btn.dataset.tab}`).hidden = false
+    })
+  })
 }
 
 function renderMetadata(parsing) {
@@ -153,30 +173,68 @@ function renderMetadata(parsing) {
   }
 
   el.metadataStats.innerHTML = stats
-    .map((s) => `<span class="stat-badge"><strong>${escapeHtml(String(s.value))}</strong> ${escapeHtml(s.label)}</span>`)
+    .map(
+      (s) =>
+        `<span class="stat-badge"><strong>${escapeHtml(String(s.value))}</strong> ${escapeHtml(s.label)}</span>`
+    )
     .join('')
   el.metadataStats.hidden = false
 }
 
-function renderExtraction(extraction) {
+function renderExtraction(extraction, grounding) {
   if (!extraction.fields) return
 
-  const rows = Object.entries(extraction.fields).map(([key, value]) => {
-    const refs = extraction.metadata?.[key]?.references || []
-    const refsText = refs.join(', ')
+  const flat = flattenFields(extraction.fields)
+  const metadata = extraction.metadata || {}
+
+  const rows = Object.entries(flat).map(([key, value]) => {
+    const refs = metadata[key]?.references || []
+
+    const refsHtml =
+      refs
+        .map((refId) => {
+          const g = grounding?.[refId]
+          const typeLabel = g ? g.type.replace('chunk', '').replace('table', 'tbl') : ''
+          const shortId = refId.length > 8 ? refId.substring(0, 8) : refId
+          const title = g ? `Page ${(g.page ?? 0) + 1}, ${g.type}` : refId
+          return `<a href="#" class="ref-link" data-chunk-id="${escapeHtml(refId)}" title="${escapeHtml(title)}">${escapeHtml(shortId)}${typeLabel ? ` (${escapeHtml(typeLabel)})` : ''}</a>`
+        })
+        .join(' ') || '&mdash;'
+
     return `<tr>
       <td>${escapeHtml(key)}</td>
       <td>${escapeHtml(formatValue(value))}</td>
-      <td>${escapeHtml(refsText)}</td>
+      <td>${refsHtml}</td>
     </tr>`
   })
 
   el.fieldsTableBody.innerHTML = rows.join('')
   el.extractionOutput.hidden = false
+
+  // Attach click handlers for reference links
+  el.fieldsTableBody.querySelectorAll('.ref-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      highlightBoundingBox(link.dataset.chunkId)
+    })
+  })
+}
+
+function flattenFields(fields, prefix = '') {
+  const result = {}
+  for (const [key, value] of Object.entries(fields)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(result, flattenFields(value, fullKey))
+    } else {
+      result[fullKey] = value
+    }
+  }
+  return result
 }
 
 function formatValue(value) {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined) return '\u2014'
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
