@@ -112,15 +112,12 @@
 
             <div id="tab-extraction" class="tab-panel" hidden>
               <div id="extraction-output" hidden>
-                <div class="extraction-panels">
-                  <div id="extraction-refs" class="extraction-panel">
-                    <h4>Source References</h4>
-                    <div id="extraction-refs-body"></div>
-                  </div>
-                  <div id="extraction-data" class="extraction-panel">
-                    <h4>Extracted Data</h4>
-                    <div id="extraction-data-body"></div>
-                  </div>
+                <div id="extraction-data">
+                  <div id="extraction-data-body"></div>
+                </div>
+                <div id="extraction-refs">
+                  <h4 id="extraction-refs-toggle">Source References <span class="toggle-arrow">&#9654;</span></h4>
+                  <div id="extraction-refs-body" hidden></div>
                 </div>
               </div>
               <p id="no-extraction-msg" class="panel-placeholder">Select a schema preset and parse to see extraction results</p>

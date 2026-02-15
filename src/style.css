@@ -719,31 +719,40 @@ section h3 {
   margin-top: 0;
 }
 
-/* Extraction two-panel layout */
-.extraction-panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+/* Extraction stacked layout */
+#extraction-refs {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
 }
 
-.extraction-panel h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+#extraction-refs-toggle {
+  margin: 0;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-#extraction-refs {
-  border-right: 1px solid var(--color-border);
-  padding-right: 1rem;
+#extraction-refs-toggle:hover {
+  color: var(--color-text);
+}
+
+.toggle-arrow {
+  font-size: 0.6rem;
+  transition: transform 0.15s;
 }
 
 .ref-row {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
+  gap: 0.5rem;
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.8rem;
@@ -757,16 +766,27 @@ section h3 {
   font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
-  margin-right: 0.5rem;
+}
+
+.ref-value {
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ref-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.2rem;
-  justify-content: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .no-refs {
@@ -913,17 +933,6 @@ section h3 {
 @media (max-width: 900px) {
   #results-body {
     grid-template-columns: 1fr;
-  }
-
-  .extraction-panels {
-    grid-template-columns: 1fr;
-  }
-
-  #extraction-refs {
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    padding-right: 0;
-    padding-bottom: 1rem;
   }
 }
 

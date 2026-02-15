@@ -185,10 +185,7 @@ function renderExtraction(extraction, grounding, presetId) {
   const flat = flattenFields(extraction.fields)
   const metadata = extraction.metadata || {}
 
-  // Left panel: source references
-  el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
-
-  // Right panel: rich renderer or generic table
+  // Main panel: rich renderer or generic table
   const preset = SCHEMA_PRESETS.find((p) => p.id === presetId)
   const rendererFn = preset?.renderer ? getRenderer(preset.renderer) : null
 
@@ -198,13 +195,18 @@ function renderExtraction(extraction, grounding, presetId) {
     el.extractionDataBody.innerHTML = renderGenericTable(flat)
   }
 
+  // Collapsible source references below
+  el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
+  el.extractionRefsBody.hidden = true
+
   el.extractionOutput.hidden = false
   attachRefLinkHandlers(el.extractionRefsBody)
+  initRefsToggle()
 }
 
 function renderRefsPanel(flat, metadata, grounding) {
-  return Object.keys(flat)
-    .map((key) => {
+  return Object.entries(flat)
+    .map(([key, value]) => {
       const refs = metadata[key]?.references || []
       const refsHtml =
         refs
@@ -219,10 +221,27 @@ function renderRefsPanel(flat, metadata, grounding) {
 
       return `<div class="ref-row">
         <span class="ref-field">${escapeHtml(key)}</span>
+        <span class="ref-value">${escapeHtml(formatValue(value))}</span>
         <div class="ref-chips">${refsHtml}</div>
       </div>`
     })
     .join('')
+}
+
+function initRefsToggle() {
+  const toggle = document.getElementById('extraction-refs-toggle')
+  if (!toggle) return
+
+  // Remove old listeners by cloning
+  const fresh = toggle.cloneNode(true)
+  toggle.replaceWith(fresh)
+
+  fresh.addEventListener('click', () => {
+    const body = el.extractionRefsBody
+    const arrow = fresh.querySelector('.toggle-arrow')
+    body.hidden = !body.hidden
+    if (arrow) arrow.textContent = body.hidden ? '\u25B6' : '\u25BC'
+  })
 }
 
 function renderGenericTable(flat) {
