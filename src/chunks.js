@@ -1,49 +1,59 @@
 import { marked } from 'marked'
-import { highlightBoundingBox, filterBoundingBoxes } from './viewer.js'
-
-const CHUNK_TYPE_COLORS = {
-  logo:        { bg: 'rgba(134, 239, 172, 0.3)', border: '#22c55e' },
-  text:        { bg: 'rgba(74, 222, 128, 0.2)',  border: '#16a34a' },
-  table:       { bg: 'rgba(96, 165, 250, 0.25)', border: '#3b82f6' },
-  figure:      { bg: 'rgba(251, 191, 36, 0.25)', border: '#f59e0b' },
-  marginalia:  { bg: 'rgba(192, 132, 252, 0.25)', border: '#a855f7' },
-  attestation: { bg: 'rgba(248, 113, 113, 0.25)', border: '#ef4444' },
-  scanCode:    { bg: 'rgba(156, 163, 175, 0.25)', border: '#6b7280' },
-  form:        { bg: 'rgba(251, 146, 60, 0.25)',  border: '#ea580c' },
-  card:        { bg: 'rgba(45, 212, 191, 0.25)',  border: '#14b8a6' },
-}
+import { CHUNK_TYPE_COLORS, highlightBoundingBox, filterBoundingBoxes } from './viewer.js'
 
 let activeFilter = 'all'
+let selectedChunkId = null
+let chunksData = null
+let groundingData = null
+let chunkOrderMapData = null
+let onChunkSelectedFromList = null
 
-export function renderChunkExplorer(chunks, grounding, chunkSummary) {
-  renderFilters(chunkSummary, chunks)
-  renderChunkList(chunks, grounding)
+export function setChunkListSelectHandler(handler) {
+  onChunkSelectedFromList = handler
 }
 
-export function scrollToChunk(chunkId) {
-  const card = document.querySelector(`.chunk-card[data-chunk-id="${CSS.escape(chunkId)}"]`)
-  if (!card) return
+export function renderChunkExplorer(chunks, grounding, chunkSummary, chunkOrderMap) {
+  chunksData = chunks
+  groundingData = grounding
+  chunkOrderMapData = chunkOrderMap
+  selectedChunkId = null
 
-  // Expand it
-  const content = card.querySelector('.chunk-card-content')
-  if (content.hidden) {
-    content.hidden = false
-    card.classList.add('chunk-card-highlight')
+  renderFilters(chunkSummary, chunks)
+  renderCompactList(chunks, grounding, chunkOrderMap)
+  initChunkDetailTabs()
+  hideChunkDetail()
+}
+
+export function selectChunk(chunkId) {
+  selectedChunkId = chunkId
+
+  // Highlight the list item
+  document.querySelectorAll('.chunk-list-item').forEach((el) => {
+    el.classList.toggle('chunk-list-item-selected', el.dataset.chunkId === chunkId)
+  })
+
+  // Scroll the selected item into view
+  const selectedItem = document.querySelector(`.chunk-list-item[data-chunk-id="${CSS.escape(chunkId)}"]`)
+  if (selectedItem) {
+    selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-
-  // Briefly highlight
-  card.classList.add('chunk-card-highlight')
-  setTimeout(() => card.classList.remove('chunk-card-highlight'), 1500)
+  showChunkDetail(chunkId)
 }
 
 export function clearChunkExplorer() {
   document.getElementById('chunk-filters').innerHTML = ''
   document.getElementById('chunk-list').innerHTML =
     '<p class="panel-placeholder">Parse a document to see chunks</p>'
+  hideChunkDetail()
   activeFilter = 'all'
+  selectedChunkId = null
+  chunksData = null
+  groundingData = null
+  chunkOrderMapData = null
 }
+
+// --- Filters ---
 
 function renderFilters(chunkSummary, chunks) {
   const container = document.getElementById('chunk-filters')
@@ -81,22 +91,30 @@ function createFilterButton(type, label) {
 }
 
 function applyFilter(type) {
-  // Filter chunk cards
-  document.querySelectorAll('.chunk-card').forEach((card) => {
+  document.querySelectorAll('.chunk-list-item').forEach((item) => {
     if (type === 'all') {
-      card.hidden = false
+      item.hidden = false
     } else {
-      // chunk_summary keys are like "chunkText", chunk type on cards is bare "text"
-      const bareType = type.replace('chunk', '').toLowerCase()
-      card.hidden = card.dataset.chunkType.toLowerCase() !== bareType
+      item.hidden = item.dataset.chunkType !== type
     }
   })
 
-  // Filter bounding boxes in viewer
   filterBoundingBoxes(type === 'all' ? 'all' : type)
+
+  // If selected chunk is now filtered out, deselect
+  if (selectedChunkId) {
+    const selectedItem = document.querySelector(`.chunk-list-item[data-chunk-id="${CSS.escape(selectedChunkId)}"]`)
+    if (selectedItem && selectedItem.hidden) {
+      selectedChunkId = null
+      hideChunkDetail()
+      document.querySelectorAll('.bbox-selected').forEach((el) => el.classList.remove('bbox-selected'))
+    }
+  }
 }
 
-function renderChunkList(chunks, grounding) {
+// --- Compact list ---
+
+function renderCompactList(chunks, grounding, chunkOrderMap) {
   const container = document.getElementById('chunk-list')
   container.innerHTML = ''
 
@@ -106,57 +124,127 @@ function renderChunkList(chunks, grounding) {
   }
 
   for (const chunk of chunks) {
-    const card = createChunkCard(chunk, grounding)
-    container.appendChild(card)
+    const item = createCompactListItem(chunk, grounding, chunkOrderMap)
+    container.appendChild(item)
   }
 }
 
-function createChunkCard(chunk, grounding) {
-  const card = document.createElement('div')
-  card.className = 'chunk-card'
-  card.dataset.chunkId = chunk.id
-  card.dataset.chunkType = chunk.type
+function createCompactListItem(chunk, grounding, chunkOrderMap) {
+  const item = document.createElement('div')
+  item.className = 'chunk-list-item'
+  item.dataset.chunkId = chunk.id
+  // Store the grounding type key for filtering (e.g. "chunkText")
+  const g = grounding?.[chunk.id]
+  const typeKey = g?.type || ('chunk' + capitalize(chunk.type))
+  item.dataset.chunkType = typeKey
 
-  const g = grounding?.[chunk.id] || chunk.grounding
-  const colors = CHUNK_TYPE_COLORS[chunk.type] || { bg: '#f1f5f9', border: '#94a3b8' }
+  const order = chunkOrderMap?.[chunk.id] ?? '?'
+  const colors = CHUNK_TYPE_COLORS[typeKey] || { bg: '#f1f5f9', border: '#94a3b8', label: chunk.type }
   const page = g?.page ?? 0
 
-  // Header
-  const header = document.createElement('div')
-  header.className = 'chunk-card-header'
+  // Order number
+  const orderSpan = document.createElement('span')
+  orderSpan.className = 'chunk-list-order'
+  orderSpan.textContent = order
+  orderSpan.style.backgroundColor = colors.border
 
+  // Type badge
   const badge = document.createElement('span')
   badge.className = 'chunk-type-badge'
   badge.style.background = colors.bg
   badge.style.borderColor = colors.border
-  badge.textContent = chunk.type
+  badge.textContent = colors.label || chunk.type
 
+  // Truncated ID
   const idSpan = document.createElement('span')
   idSpan.className = 'chunk-id'
-  idSpan.textContent = chunk.id.length > 8 ? chunk.id.substring(0, 8) + '...' : chunk.id
+  idSpan.textContent = chunk.id.length > 8 ? chunk.id.substring(0, 8) : chunk.id
 
+  // Page number
   const pageSpan = document.createElement('span')
   pageSpan.className = 'chunk-page'
   pageSpan.textContent = `p.${page + 1}`
 
-  header.appendChild(badge)
-  header.appendChild(idSpan)
-  header.appendChild(pageSpan)
+  item.appendChild(orderSpan)
+  item.appendChild(badge)
+  item.appendChild(idSpan)
+  item.appendChild(pageSpan)
 
-  // Content (collapsed by default)
-  const content = document.createElement('div')
-  content.className = 'chunk-card-content'
-  content.hidden = true
-  // Render markdown (content is from the ADE parser, not raw user input)
-  content.innerHTML = marked.parse(chunk.markdown || '')
-
-  // Toggle content and highlight bbox on header click
-  header.addEventListener('click', () => {
-    content.hidden = !content.hidden
-    highlightBoundingBox(chunk.id)
+  item.addEventListener('click', () => {
+    selectChunk(chunk.id)
+    if (onChunkSelectedFromList) onChunkSelectedFromList(chunk.id)
   })
 
-  card.appendChild(header)
-  card.appendChild(content)
-  return card
+  return item
+}
+
+// --- Detail panel ---
+
+function initChunkDetailTabs() {
+  const buttons = document.querySelectorAll('.chunk-tab-btn')
+  const panels = document.querySelectorAll('.chunk-tab-panel')
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.remove('active'))
+      panels.forEach((p) => (p.hidden = true))
+      btn.classList.add('active')
+      document.getElementById(`chunk-tab-${btn.dataset.chunkTab}`).hidden = false
+    })
+  })
+}
+
+function showChunkDetail(chunkId) {
+  const detailPanel = document.getElementById('chunk-detail')
+  detailPanel.hidden = false
+
+  const chunk = chunksData?.find((c) => c.id === chunkId)
+  if (!chunk) return
+
+  const g = groundingData?.[chunkId]
+  const order = chunkOrderMapData?.[chunkId] ?? '?'
+  const typeKey = g?.type || ('chunk' + capitalize(chunk.type))
+  const colors = CHUNK_TYPE_COLORS[typeKey] || { bg: '#f1f5f9', border: '#94a3b8', label: chunk.type }
+
+  // Order tab
+  const orderPanel = document.getElementById('chunk-tab-order')
+  orderPanel.innerHTML = `
+    <div class="detail-order-number" style="color: ${colors.border}">#${order}</div>
+    <dl class="detail-meta">
+      <dt>Chunk ID</dt><dd class="mono">${escapeHtml(chunkId)}</dd>
+      <dt>Page</dt><dd>${g ? g.page + 1 : 'N/A'}</dd>
+      ${g ? `<dt>Bounding Box</dt><dd class="mono">top: ${g.box.top.toFixed(3)}, left: ${g.box.left.toFixed(3)}, right: ${g.box.right.toFixed(3)}, bottom: ${g.box.bottom.toFixed(3)}</dd>` : ''}
+    </dl>
+  `
+
+  // Markdown tab
+  const mdPanel = document.getElementById('chunk-tab-markdown')
+  mdPanel.innerHTML = `<div class="chunk-markdown-content">${marked.parse(chunk.markdown || '')}</div>`
+
+  // Type tab
+  const typePanel = document.getElementById('chunk-tab-type')
+  typePanel.innerHTML = `
+    <div class="detail-type-header">
+      <span class="detail-type-swatch" style="background: ${colors.bg}; border-color: ${colors.border}"></span>
+      <span class="detail-type-name">${escapeHtml(colors.label || chunk.type)}</span>
+    </div>
+    <p class="detail-type-key">API type: <code>${escapeHtml(typeKey)}</code></p>
+  `
+}
+
+function hideChunkDetail() {
+  const detailPanel = document.getElementById('chunk-detail')
+  if (detailPanel) detailPanel.hidden = true
+}
+
+// --- Helpers ---
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
 }
