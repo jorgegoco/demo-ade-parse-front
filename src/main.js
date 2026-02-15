@@ -2,7 +2,7 @@ import './style.css'
 import { initUI, showFileInfo, clearFileInfo, showLoading, hideLoading, showError, renderResults, clearResults } from './ui.js'
 import { parseDocument } from './api.js'
 import { validateFile, validateSchema } from './validation.js'
-import { initSchemaSelector, getSelectedSchema } from './schemas.js'
+import { initSchemaSelector, getSelectedSchema, getSelectedPresetId } from './schemas.js'
 import { renderDocumentViewer, setChunkSelectHandler, highlightBoundingBox, clearViewer } from './viewer.js'
 import { renderChunkExplorer, selectChunk, clearChunkExplorer, setChunkListSelectHandler } from './chunks.js'
 
@@ -37,6 +37,7 @@ async function handleParse() {
   if (!selectedFile) return
 
   const schemaInput = getSelectedSchema()
+  const presetId = getSelectedPresetId()
   if (schemaInput) {
     const schemaResult = validateSchema(schemaInput)
     if (!schemaResult.valid) {
@@ -52,7 +53,7 @@ async function handleParse() {
 
   try {
     const result = await parseDocument(selectedFile, schemaInput || null)
-    renderResults(result)
+    renderResults(result, presetId)
 
     // Build chunk order map (chunk ID -> 1-based index)
     const chunkOrderMap = {}

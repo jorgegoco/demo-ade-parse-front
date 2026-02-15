@@ -1,5 +1,7 @@
 import { highlightBoundingBox } from './viewer.js'
 import { selectChunk } from './chunks.js'
+import { getRenderer } from './renderers.js'
+import { SCHEMA_PRESETS } from './schemas.js'
 
 let el = {}
 
@@ -17,7 +19,8 @@ export function initUI({ onFileSelected }) {
     errorDisplay: document.getElementById('error-display'),
     metadataStats: document.getElementById('metadata-stats'),
     extractionOutput: document.getElementById('extraction-output'),
-    fieldsTableBody: document.querySelector('#fields-table tbody'),
+    extractionRefsBody: document.getElementById('extraction-refs-body'),
+    extractionDataBody: document.getElementById('extraction-data-body'),
     noExtractionMsg: document.getElementById('no-extraction-msg'),
   }
 
@@ -99,7 +102,7 @@ export function showError(message, detail = null) {
   el.resultsSection.hidden = false
 }
 
-export function renderResults(data) {
+export function renderResults(data, presetId) {
   clearResults()
 
   if (data.error || !data.success) {
@@ -114,7 +117,7 @@ export function renderResults(data) {
   }
 
   if (data.extraction) {
-    renderExtraction(data.extraction, data.parsing?.grounding)
+    renderExtraction(data.extraction, data.parsing?.grounding, presetId)
     el.noExtractionMsg.hidden = true
   } else {
     el.noExtractionMsg.hidden = false
@@ -128,7 +131,8 @@ export function clearResults() {
   el.metadataStats.hidden = true
   el.metadataStats.innerHTML = ''
   el.extractionOutput.hidden = true
-  el.fieldsTableBody.innerHTML = ''
+  if (el.extractionRefsBody) el.extractionRefsBody.innerHTML = ''
+  if (el.extractionDataBody) el.extractionDataBody.innerHTML = ''
   el.resultsSection.hidden = true
   if (el.noExtractionMsg) el.noExtractionMsg.hidden = false
 }
@@ -175,38 +179,70 @@ function renderMetadata(parsing) {
   el.metadataStats.hidden = false
 }
 
-function renderExtraction(extraction, grounding) {
+function renderExtraction(extraction, grounding, presetId) {
   if (!extraction.fields) return
 
   const flat = flattenFields(extraction.fields)
   const metadata = extraction.metadata || {}
 
-  const rows = Object.entries(flat).map(([key, value]) => {
-    const refs = metadata[key]?.references || []
+  // Left panel: source references
+  el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
 
-    const refsHtml =
-      refs
-        .map((refId) => {
-          const g = grounding?.[refId]
-          const typeLabel = g ? g.type.replace('chunk', '').replace('table', 'tbl') : ''
-          const shortId = refId.length > 8 ? refId.substring(0, 8) : refId
-          const title = g ? `Page ${(g.page ?? 0) + 1}, ${g.type}` : refId
-          return `<a href="#" class="ref-link" data-chunk-id="${escapeHtml(refId)}" title="${escapeHtml(title)}">${escapeHtml(shortId)}${typeLabel ? ` (${escapeHtml(typeLabel)})` : ''}</a>`
-        })
-        .join(' ') || '&mdash;'
+  // Right panel: rich renderer or generic table
+  const preset = SCHEMA_PRESETS.find((p) => p.id === presetId)
+  const rendererFn = preset?.renderer ? getRenderer(preset.renderer) : null
 
-    return `<tr>
-      <td>${escapeHtml(key)}</td>
-      <td>${escapeHtml(formatValue(value))}</td>
-      <td>${refsHtml}</td>
-    </tr>`
-  })
+  if (rendererFn) {
+    el.extractionDataBody.innerHTML = rendererFn(extraction.fields, metadata, grounding)
+  } else {
+    el.extractionDataBody.innerHTML = renderGenericTable(flat)
+  }
 
-  el.fieldsTableBody.innerHTML = rows.join('')
   el.extractionOutput.hidden = false
+  attachRefLinkHandlers(el.extractionRefsBody)
+}
 
-  // Attach click handlers for reference links
-  el.fieldsTableBody.querySelectorAll('.ref-link').forEach((link) => {
+function renderRefsPanel(flat, metadata, grounding) {
+  return Object.keys(flat)
+    .map((key) => {
+      const refs = metadata[key]?.references || []
+      const refsHtml =
+        refs
+          .map((refId) => {
+            const g = grounding?.[refId]
+            const typeLabel = g ? g.type.replace('chunk', '').replace('table', 'tbl') : ''
+            const shortId = refId.length > 8 ? refId.substring(0, 8) : refId
+            const title = g ? `Page ${(g.page ?? 0) + 1}, ${g.type}` : refId
+            return `<a href="#" class="ref-link" data-chunk-id="${escapeHtml(refId)}" title="${escapeHtml(title)}">${escapeHtml(shortId)}${typeLabel ? ` (${escapeHtml(typeLabel)})` : ''}</a>`
+          })
+          .join(' ') || '<span class="no-refs">&mdash;</span>'
+
+      return `<div class="ref-row">
+        <span class="ref-field">${escapeHtml(key)}</span>
+        <div class="ref-chips">${refsHtml}</div>
+      </div>`
+    })
+    .join('')
+}
+
+function renderGenericTable(flat) {
+  const rows = Object.entries(flat)
+    .map(
+      ([key, value]) => `<tr>
+        <td>${escapeHtml(key)}</td>
+        <td>${escapeHtml(formatValue(value))}</td>
+      </tr>`
+    )
+    .join('')
+
+  return `<table class="generic-fields-table">
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`
+}
+
+function attachRefLinkHandlers(container) {
+  container.querySelectorAll('.ref-link').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault()
       const chunkId = link.dataset.chunkId
