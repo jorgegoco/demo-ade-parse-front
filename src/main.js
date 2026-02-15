@@ -54,9 +54,17 @@ async function handleParse() {
     const result = await parseDocument(selectedFile, schemaInput || null)
     renderResults(result)
 
+    // Build chunk order map (chunk ID -> 1-based index)
+    const chunkOrderMap = {}
+    if (result.parsing?.chunks) {
+      result.parsing.chunks.forEach((chunk, i) => {
+        chunkOrderMap[chunk.id] = i + 1
+      })
+    }
+
     // Render bounding box viewer if page images are available
     if (result.parsing?.page_images?.length) {
-      renderDocumentViewer(result.parsing.page_images, result.parsing.grounding)
+      renderDocumentViewer(result.parsing.page_images, result.parsing.grounding, chunkOrderMap)
     }
 
     // Render chunk explorer if chunks are available
@@ -64,7 +72,8 @@ async function handleParse() {
       renderChunkExplorer(
         result.parsing.chunks,
         result.parsing.grounding,
-        result.parsing.chunk_summary
+        result.parsing.chunk_summary,
+        chunkOrderMap
       )
     }
   } catch (err) {

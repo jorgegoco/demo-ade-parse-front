@@ -1,4 +1,4 @@
-const CHUNK_TYPE_COLORS = {
+export const CHUNK_TYPE_COLORS = {
   chunkLogo:        { bg: 'rgba(134, 239, 172, 0.3)', border: '#22c55e', label: 'Logo' },
   chunkText:        { bg: 'rgba(74, 222, 128, 0.2)',  border: '#16a34a', label: 'Text' },
   chunkTable:       { bg: 'rgba(96, 165, 250, 0.25)', border: '#3b82f6', label: 'Table' },
@@ -16,7 +16,7 @@ export function setChunkSelectHandler(handler) {
   onChunkSelect = handler
 }
 
-export function renderDocumentViewer(pageImages, grounding) {
+export function renderDocumentViewer(pageImages, grounding, chunkOrderMap) {
   const container = document.getElementById('viewer-container')
   container.innerHTML = ''
 
@@ -26,7 +26,7 @@ export function renderDocumentViewer(pageImages, grounding) {
   }
 
   for (const pageData of pageImages) {
-    const wrapper = createPageElement(pageData, grounding, pageImages.length > 1)
+    const wrapper = createPageElement(pageData, grounding, pageImages.length > 1, chunkOrderMap)
     container.appendChild(wrapper)
   }
 
@@ -60,7 +60,7 @@ export function clearViewer() {
   document.getElementById('viewer-legend').innerHTML = ''
 }
 
-function createPageElement(pageData, grounding, showLabel) {
+function createPageElement(pageData, grounding, showLabel, chunkOrderMap) {
   const wrapper = document.createElement('div')
   wrapper.className = 'page-wrapper'
 
@@ -87,7 +87,8 @@ function createPageElement(pageData, grounding, showLabel) {
       // Only show chunk-level boxes, skip table/tableCell sub-elements
       if (!g.type.startsWith('chunk')) continue
 
-      const box = createBoundingBox(id, g)
+      const orderNumber = chunkOrderMap?.[id] ?? '?'
+      const box = createBoundingBox(id, g, orderNumber)
       overlay.appendChild(box)
     }
   }
@@ -97,7 +98,7 @@ function createPageElement(pageData, grounding, showLabel) {
   return wrapper
 }
 
-function createBoundingBox(id, grounding) {
+function createBoundingBox(id, grounding, orderNumber) {
   const { box, type } = grounding
   const colors = CHUNK_TYPE_COLORS[type] || { bg: 'rgba(0,0,0,0.1)', border: '#666', label: type }
 
@@ -113,17 +114,22 @@ function createBoundingBox(id, grounding) {
   div.style.backgroundColor = colors.bg
   div.style.borderColor = colors.border
 
-  // Always-visible type label in top-left corner
-  const label = document.createElement('span')
-  label.className = 'bbox-label'
-  label.textContent = colors.label
-  label.style.backgroundColor = colors.border
-  div.appendChild(label)
+  // Order number circle in top-left corner
+  const circle = document.createElement('span')
+  circle.className = 'bbox-order-circle'
+  circle.textContent = String(orderNumber)
+  circle.style.backgroundColor = colors.border
+  if (orderNumber > 99) {
+    circle.style.width = '28px'
+    circle.style.height = '28px'
+    circle.style.fontSize = '0.5rem'
+  }
+  div.appendChild(circle)
 
-  // Hover tooltip with chunk ID for detailed inspection
+  // Hover tooltip with type and chunk ID
   const tooltip = document.createElement('span')
   tooltip.className = 'bbox-tooltip'
-  tooltip.textContent = `${colors.label} — ${id.substring(0, 8)}`
+  tooltip.textContent = `#${orderNumber} ${colors.label} — ${id.substring(0, 8)}`
   div.appendChild(tooltip)
 
   div.addEventListener('click', () => {
