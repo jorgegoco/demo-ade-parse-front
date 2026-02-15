@@ -6,7 +6,8 @@ export const SCHEMA_PRESETS = [
   },
   {
     id: 'utility_bill',
-    label: 'Utility Bill',
+    label: 'SDGE Electric Bill',
+    renderer: 'sdge_bill',
     schema: {
       type: 'object',
       title: 'Utility Bill Field Extraction Schema',
@@ -110,4 +111,8 @@ export function initSchemaSelector() {
 export function getSelectedSchema() {
   const input = document.getElementById('schema-input')
   return input.value.trim() || null
+}
+
+export function getSelectedPresetId() {
+  return document.getElementById('schema-preset').value
 }
