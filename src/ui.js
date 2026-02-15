@@ -1,7 +1,4 @@
-import { marked } from 'marked'
 import { highlightBoundingBox } from './viewer.js'
-
-marked.setOptions({ breaks: true, gfm: true })
 
 let el = {}
 
@@ -18,7 +15,6 @@ export function initUI({ onFileSelected }) {
     resultsSection: document.getElementById('results-section'),
     errorDisplay: document.getElementById('error-display'),
     metadataStats: document.getElementById('metadata-stats'),
-    markdownRender: document.getElementById('markdown-render'),
     extractionOutput: document.getElementById('extraction-output'),
     fieldsTableBody: document.querySelector('#fields-table tbody'),
     noExtractionMsg: document.getElementById('no-extraction-msg'),
@@ -114,8 +110,6 @@ export function renderResults(data) {
 
   if (data.parsing) {
     renderMetadata(data.parsing)
-    // Render markdown content (from server-side parser, not raw user input)
-    el.markdownRender.innerHTML = marked.parse(data.parsing.markdown || '')
   }
 
   if (data.extraction) {
@@ -132,7 +126,6 @@ export function clearResults() {
   el.errorDisplay.innerHTML = ''
   el.metadataStats.hidden = true
   el.metadataStats.innerHTML = ''
-  el.markdownRender.innerHTML = ''
   el.extractionOutput.hidden = true
   el.fieldsTableBody.innerHTML = ''
   el.resultsSection.hidden = true
