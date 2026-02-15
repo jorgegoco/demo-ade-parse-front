@@ -1,4 +1,5 @@
 import { highlightBoundingBox } from './viewer.js'
+import { selectChunk } from './chunks.js'
 
 let el = {}
 
@@ -208,7 +209,16 @@ function renderExtraction(extraction, grounding) {
   el.fieldsTableBody.querySelectorAll('.ref-link').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault()
-      highlightBoundingBox(link.dataset.chunkId)
+      const chunkId = link.dataset.chunkId
+      highlightBoundingBox(chunkId)
+      selectChunk(chunkId)
+      // Switch to Chunks tab
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'))
+      document.querySelectorAll('.tab-panel').forEach((p) => (p.hidden = true))
+      const chunksBtn = document.querySelector('.tab-btn[data-tab="chunks"]')
+      if (chunksBtn) chunksBtn.classList.add('active')
+      const chunksPanel = document.getElementById('tab-chunks')
+      if (chunksPanel) chunksPanel.hidden = false
     })
   })
 }
