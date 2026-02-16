@@ -196,12 +196,13 @@ function renderExtraction(extraction, grounding, presetId) {
   }
 
   // Collapsible source references below
-  if (rendererFn) {
-    el.extractionRefsBody.innerHTML = renderRawOutput(extraction.fields)
-  } else {
-    el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
+  let refsHtml = ''
+  if (!rendererFn) {
+    refsHtml += renderRefsPanel(flat, metadata, grounding)
   }
-  el.extractionRefsBody.hidden = true
+  refsHtml += renderRawOutput(extraction.fields)
+  el.extractionRefsBody.innerHTML = refsHtml
+  el.extractionRefsBody.hidden = false
 
   el.extractionOutput.hidden = false
   if (!rendererFn) {
@@ -268,9 +269,12 @@ function initRefsToggle() {
   const fresh = toggle.cloneNode(true)
   toggle.replaceWith(fresh)
 
+  // Set initial arrow to expanded state
+  const arrow = fresh.querySelector('.toggle-arrow')
+  if (arrow) arrow.textContent = '\u25BC'
+
   fresh.addEventListener('click', () => {
     const body = el.extractionRefsBody
-    const arrow = fresh.querySelector('.toggle-arrow')
     body.hidden = !body.hidden
     if (arrow) arrow.textContent = body.hidden ? '\u25B6' : '\u25BC'
   })
