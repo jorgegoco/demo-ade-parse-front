@@ -53,6 +53,7 @@ async function handleParse() {
 
   try {
     const result = await parseDocument(selectedFile, schemaInput || null)
+    console.log('[DEBUG] extraction fields:', result?.extraction?.fields)
     renderResults(result, presetId)
 
     // Build chunk order map (chunk ID -> 1-based index)
