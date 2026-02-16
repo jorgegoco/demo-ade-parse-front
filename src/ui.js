@@ -22,6 +22,7 @@ export function initUI({ onFileSelected }) {
     extractionRefsBody: document.getElementById('extraction-refs-body'),
     extractionDataBody: document.getElementById('extraction-data-body'),
     noExtractionMsg: document.getElementById('no-extraction-msg'),
+    downloadBar: document.getElementById('download-bar'),
   }
 
   // Drop zone: click to browse
@@ -102,7 +103,7 @@ export function showError(message, detail = null) {
   el.resultsSection.hidden = false
 }
 
-export function renderResults(data, presetId) {
+export function renderResults(data, presetId, fileName) {
   clearResults()
 
   if (data.error || !data.success) {
@@ -123,6 +124,8 @@ export function renderResults(data, presetId) {
     el.noExtractionMsg.hidden = false
     el.extractionOutput.hidden = true
   }
+
+  renderDownloads(fileName, data.parsing?.markdown, data.extraction?.fields)
 }
 
 export function clearResults() {
@@ -135,6 +138,10 @@ export function clearResults() {
   if (el.extractionDataBody) el.extractionDataBody.innerHTML = ''
   el.resultsSection.hidden = true
   if (el.noExtractionMsg) el.noExtractionMsg.hidden = false
+  if (el.downloadBar) {
+    el.downloadBar.innerHTML = ''
+    el.downloadBar.hidden = true
+  }
 }
 
 function initTabs() {
@@ -177,6 +184,47 @@ function renderMetadata(parsing) {
     )
     .join('')
   el.metadataStats.hidden = false
+}
+
+function renderDownloads(fileName, markdown, extractionFields) {
+  const baseName = (fileName || 'document').replace(/\.[^/.]+$/, '')
+  let html = ''
+
+  if (markdown) {
+    html += `<button class="download-btn" id="dl-markdown">Download Markdown</button>`
+  }
+  if (extractionFields) {
+    html += `<button class="download-btn" id="dl-json">Download Extraction JSON</button>`
+  }
+
+  if (!html) return
+
+  el.downloadBar.innerHTML = html
+  el.downloadBar.hidden = false
+
+  const dlMd = document.getElementById('dl-markdown')
+  if (dlMd) {
+    dlMd.addEventListener('click', () =>
+      downloadFile(markdown, `${baseName}.md`, 'text/markdown')
+    )
+  }
+
+  const dlJson = document.getElementById('dl-json')
+  if (dlJson) {
+    dlJson.addEventListener('click', () =>
+      downloadFile(JSON.stringify(extractionFields, null, 2), `${baseName}_extraction.json`, 'application/json')
+    )
+  }
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function renderExtraction(extraction, grounding, presetId) {
