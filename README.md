@@ -1,14 +1,28 @@
-# demo-ade-parse-front
+# Document Parser & Extractor
 
-A lightweight frontend for the **demo-ade-parse** API — a document parser and field extractor service. Built for demo and experimentation purposes.
+A lightweight frontend for LandingAI's **Agentic Document Extraction (ADE)** API. Upload any document, get structured markdown with visual grounding, and optionally extract key-value pairs using JSON schemas.
+
+Built for demo and experimentation purposes. Based on the [Document Understanding with ADE](https://www.deeplearning.ai/) course by DeepLearning.AI.
 
 ## Features
 
-- **File upload** via drag-and-drop or file picker
-- **Document parsing** — renders the parsed document as formatted Markdown (tables, headings, code blocks, etc.)
-- **Structured field extraction** — provide a JSON schema and the API extracts matching fields from the document
-- **Client-side validation** — checks file type and size before uploading
-- **Metadata display** — pages, chunks, chunk breakdown, and processing duration
+**Parsing**
+- Drag-and-drop or click-to-browse file upload
+- Full document parsing into structured markdown with semantic chunks
+- Page image viewer with color-coded bounding boxes for each chunk
+- Chunk explorer with type filters (text, table, figure, logo, marginalia)
+- Chunk detail panel with Order, Markdown (raw source), HTML (rendered), and Type tabs
+
+**Extraction**
+- Preset schema support (SDGE Electric Bill with a custom-rendered card)
+- Custom JSON schema input for extracting arbitrary fields from any document
+- Source References section showing the raw extraction output in Python-dict format
+- Clickable ref-links (custom schemas) that highlight the source chunk in the viewer
+
+**Output**
+- Metadata stats: duration, pages, chunk count, type breakdown
+- Download parsed markdown as `.md`
+- Download extraction result as `.json`
 
 ## Supported file types
 
@@ -22,6 +36,8 @@ A lightweight frontend for the **demo-ade-parse** API — a document parser and 
 
 Maximum file size: **5 MB**
 
+> **Tip:** Some documents contain no text — only illustrations or diagrams. For these, the backend uses the `dpt-1-latest` model, which provides more detailed figure descriptions compared to the default `dpt-2-latest`.
+
 ## Getting started
 
 ```bash
@@ -34,36 +50,59 @@ The dev server runs on [http://localhost:5173](http://localhost:5173).
 ## Usage
 
 1. **Upload a document** — drag a file onto the drop zone or click to browse.
-2. **(Optional) Add a JSON schema** — expand the schema section and enter a JSON schema to extract specific fields. Example:
-   ```json
-   {
-     "type": "object",
-     "properties": {
-       "invoice_number": {
-         "type": "string",
-         "description": "Invoice or document number"
-       },
-       "total_amount": {
-         "type": "number",
-         "description": "Total amount including tax"
-       }
-     },
-     "required": ["invoice_number", "total_amount"]
-   }
-   ```
-   Write detailed `description` values — they directly influence extraction accuracy.
-3. **Click "Parse Document"** — the parsed Markdown and any extracted fields will appear in the results section.
+2. **Choose a schema** — select a preset (e.g. SDGE Electric Bill), enter a custom JSON schema, or leave it as "No schema" for parse-only mode.
+3. **Click "Parse Document"** — results appear in a two-panel layout:
+   - **Left:** page images with bounding boxes around detected chunks
+   - **Right:** Chunks tab (filterable list with detail view) and Extraction tab (rendered fields + raw output)
+4. **Download results** — use the download buttons to save the parsed markdown or extraction JSON locally.
+
+### Custom JSON schema example
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "Invoice or document reference number"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total amount due including tax"
+    }
+  }
+}
+```
+
+Write detailed `description` values — they directly influence extraction accuracy.
+
+## Architecture
+
+```
+src/
+  main.js         Entry point, orchestrates all modules
+  api.js          API client (POST /parse)
+  validation.js   File type/size and schema validation
+  schemas.js      Schema presets and selector UI
+  renderers.js    Custom renderers for preset schemas (SDGE bill)
+  ui.js           DOM manipulation, rendering, and downloads
+  chunks.js       Chunk explorer (filters, list, detail tabs)
+  viewer.js       Page image viewer with bounding box overlays
+  style.css       All styles
+```
 
 ## API
 
-This frontend connects to the demo-ade-parse API:
+This frontend connects to a backend service running on a Contabo VPS:
 
 - **Base URL:** `https://miagentuca-demos-ade-parse.ud2cay.easypanel.host`
-- **POST /parse** — multipart/form-data with `file` (required) and `schema` (optional)
+- **POST /parse** — multipart/form-data with `file` (required) and `schema` (optional JSON string)
 - **GET /health** — health check
+
+The backend wraps LandingAI's ADE SDK, calling the Parse API (`dpt-2-latest`) to convert documents into structured markdown with chunks and bounding boxes, and the Extract API (`extract-latest`) to pull key-value pairs matching the provided schema.
 
 ## Tech stack
 
 - [Vite](https://vite.dev/) — dev server and bundler
-- [marked](https://marked.js.org/) — Markdown rendering (GFM tables)
 - Vanilla JS — no framework
+- Plain CSS
