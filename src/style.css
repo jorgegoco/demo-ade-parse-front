@@ -677,45 +677,60 @@ section h3 {
   font-size: 0.75rem;
 }
 
-/* Chunk markdown content */
-.chunk-markdown-content {
+/* Chunk Markdown tab (raw source) */
+.chunk-raw-markdown {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Chunk HTML tab (rendered) */
+.chunk-html-content {
   font-size: 0.85rem;
   line-height: 1.6;
 }
 
-.chunk-markdown-content table {
+.chunk-html-content table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8rem;
 }
 
-.chunk-markdown-content th,
-.chunk-markdown-content td {
+.chunk-html-content th,
+.chunk-html-content td {
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--color-border);
   text-align: left;
 }
 
-.chunk-markdown-content th {
+.chunk-html-content th {
   background: var(--color-bg);
   font-weight: 600;
 }
 
-.chunk-markdown-content p {
+.chunk-html-content p {
   margin: 0.5rem 0;
 }
 
-.chunk-markdown-content h1,
-.chunk-markdown-content h2,
-.chunk-markdown-content h3,
-.chunk-markdown-content h4 {
+.chunk-html-content h1,
+.chunk-html-content h2,
+.chunk-html-content h3,
+.chunk-html-content h4 {
   margin-top: 0.75rem;
   margin-bottom: 0.35rem;
 }
 
-.chunk-markdown-content h1:first-child,
-.chunk-markdown-content h2:first-child,
-.chunk-markdown-content h3:first-child {
+.chunk-html-content h1:first-child,
+.chunk-html-content h2:first-child,
+.chunk-html-content h3:first-child {
   margin-top: 0;
 }
 

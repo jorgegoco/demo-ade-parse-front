@@ -1,4 +1,3 @@
-import { marked } from 'marked'
 import { CHUNK_TYPE_COLORS, highlightBoundingBox, filterBoundingBoxes } from './viewer.js'
 
 let activeFilter = 'all'
@@ -217,9 +216,13 @@ function showChunkDetail(chunkId) {
     </dl>
   `
 
-  // Markdown tab
+  // Markdown tab (raw source)
   const mdPanel = document.getElementById('chunk-tab-markdown')
-  mdPanel.innerHTML = `<div class="chunk-markdown-content">${marked.parse(chunk.markdown || '')}</div>`
+  mdPanel.innerHTML = `<pre class="chunk-raw-markdown">${escapeHtml(chunk.markdown || '')}</pre>`
+
+  // HTML tab (rendered)
+  const htmlPanel = document.getElementById('chunk-tab-html')
+  htmlPanel.innerHTML = `<div class="chunk-html-content">${chunk.markdown || ''}</div>`
 
   // Type tab
   const typePanel = document.getElementById('chunk-tab-type')
