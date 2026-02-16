@@ -1,4 +1,4 @@
-const API_URL = 'https://miagentuca-demos-ade-parse.ud2cay.easypanel.host/parse'
+const API_URL = import.meta.env.VITE_API_URL
 
 export class ApiError extends Error {
   constructor(message, status, detail) {

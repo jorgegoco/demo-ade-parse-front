@@ -41,6 +41,7 @@ Maximum file size: **5 MB**
 ## Getting started
 
 ```bash
+cp .env.example .env   # then set VITE_API_URL to your backend
 npm install
 npm run dev
 ```
@@ -93,9 +94,8 @@ src/
 
 ## API
 
-This frontend connects to a backend service running on a Contabo VPS:
+The backend URL is configured via the `VITE_API_URL` environment variable (see `.env.example`).
 
-- **Base URL:** `https://miagentuca-demos-ade-parse.ud2cay.easypanel.host`
 - **POST /parse** — multipart/form-data with `file` (required) and `schema` (optional JSON string)
 - **GET /health** — health check
 
