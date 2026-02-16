@@ -98,7 +98,7 @@ function fmtBool(value) {
 }
 
 function esc(str) {
-  if (str == null) return '<span class="sdge-na">&mdash;</span>'
+  if (str == null || str === '') return '<span class="sdge-na">&mdash;</span>'
   const div = document.createElement('div')
   div.textContent = String(str)
   return div.innerHTML

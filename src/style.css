@@ -813,6 +813,20 @@ section h3 {
   background: #dbeafe;
 }
 
+/* Raw output (preset Source References) */
+.raw-output {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
+
 /* Generic extraction table (fallback for custom schemas) */
 .generic-fields-table {
   width: 100%;

@@ -196,11 +196,17 @@ function renderExtraction(extraction, grounding, presetId) {
   }
 
   // Collapsible source references below
-  el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
+  if (rendererFn) {
+    el.extractionRefsBody.innerHTML = renderRawOutput(extraction.fields)
+  } else {
+    el.extractionRefsBody.innerHTML = renderRefsPanel(flat, metadata, grounding)
+  }
   el.extractionRefsBody.hidden = true
 
   el.extractionOutput.hidden = false
-  attachRefLinkHandlers(el.extractionRefsBody)
+  if (!rendererFn) {
+    attachRefLinkHandlers(el.extractionRefsBody)
+  }
   initRefsToggle()
 }
 
@@ -226,6 +232,32 @@ function renderRefsPanel(flat, metadata, grounding) {
       </div>`
     })
     .join('')
+}
+
+function renderRawOutput(fields) {
+  return `<pre class="raw-output">${escapeHtml(toPythonDict(fields))}</pre>`
+}
+
+function toPythonDict(obj, indent = 0) {
+  if (obj === null || obj === undefined) return 'None'
+  if (typeof obj === 'boolean') return obj ? 'True' : 'False'
+  if (typeof obj === 'number') return String(obj)
+  if (typeof obj === 'string') return `'${obj.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return '[]'
+    const items = obj.map((v) => `${pad(indent + 2)}${toPythonDict(v, indent + 2)}`)
+    return `[\n${items.join(',\n')}\n${pad(indent)}]`
+  }
+  const entries = Object.entries(obj)
+  if (entries.length === 0) return '{}'
+  const rows = entries.map(
+    ([k, v]) => `${pad(indent + 2)}'${k}': ${toPythonDict(v, indent + 2)}`
+  )
+  return `{\n${rows.join(',\n')}\n${pad(indent)}}`
+}
+
+function pad(n) {
+  return ' '.repeat(n)
 }
 
 function initRefsToggle() {
