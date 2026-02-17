@@ -4,3 +4,4 @@ dist
 CLAUDE.md
 /helper
 .env
+backend-upgrade-prompt.md
