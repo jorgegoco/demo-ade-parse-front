@@ -2,7 +2,7 @@
 
 A lightweight frontend for LandingAI's **Agentic Document Extraction (ADE)** API. Upload any document, get structured markdown with visual grounding, and optionally extract key-value pairs using JSON schemas.
 
-Built for demo and experimentation purposes. Based on the [Document Understanding with ADE](https://www.deeplearning.ai/) course by DeepLearning.AI.
+Built for demo and experimentation purposes.
 
 ## Features
 
